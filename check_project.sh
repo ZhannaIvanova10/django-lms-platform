@@ -18,12 +18,12 @@ check_file() {
         return 1
     fi
 }
+
 check_file "manage.py"
 check_file "requirements.txt"
 check_file "README.md"
 check_file "FINAL_REPORT.md"
 check_file "test_auth_final.py"
-
 echo ""
 echo "2. 🐍 ПРОВЕРКА PYTHON ОКРУЖЕНИЯ:"
 echo "--------------------------------"
@@ -54,11 +54,12 @@ echo "--------------------------------"
 py_files=$(find . -name "*.py" -type f 2>/dev/null | wc -l)
 md_files=$(find . -name "*.md" -type f 2>/dev/null | wc -l)
 total_lines=$(find . -name "*.py" -type f -exec cat {} \; 2>/dev/null | wc -l)
+project_size=$(du -sh . 2>/dev/null | cut -f1)
 
 echo "   Файлы Python: $py_files"
 echo "   Файлы документации: $md_files"
 echo "   Строк кода Python: $total_lines"
-echo "   Размер проекта: $(du -sh . 2>/dev/null | cut -f1)"
+echo "   Размер проекта: $project_size"
 
 echo ""
 echo "4. 📋 ИНФОРМАЦИЯ О ВЫПОЛНЕНИИ:"
@@ -66,8 +67,9 @@ echo "--------------------------------"
 
 # Читаем отчет
 if [ -f "FINAL_REPORT.md" ]; then
+    report_lines=$(wc -l < FINAL_REPORT.md)
     echo "   Заданий выполнено: 4/4"
-    echo "   Отчет создан: Да (166 строк)"
+    echo "   Отчет создан: Да ($report_lines строк)"
     echo "   GitHub: https://github.com/ZhannaIvanova10/django-lms-platform"
 else
     echo "   ❌ FINAL_REPORT.md не найден"
