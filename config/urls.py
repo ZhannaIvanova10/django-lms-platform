@@ -1,42 +1,22 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
-from rest_framework import permissions
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework import routers
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-@api_view(['GET'])
-def api_root(request):
-    """Корневой endpoint с документацией API"""
-    return Response({
-        'message': 'LMS Platform API',
-        'documentation': 'Используйте следующие endpoints:',
-        'endpoints': {
-            'admin_panel': '/admin/',
-            'courses': '/api/courses/',
-            'lessons': '/api/lessons/',
-            'users': '/api/users/',
-        },
-        'instructions': {
-            'courses': 'Используйте ViewSets (требование задания)',
-            'lessons': 'Используйте Generic классы (требование задания)',
-            'testing': 'Тестируйте через Postman или curl'
-        }
-    })
+# Импорты views
+from users.views import UserViewSet, UserProfileAPIView
+from materials.views import CourseViewSet, LessonViewSet
+
+# Настройка роутера
+router = routers.DefaultRouter()
+router.register(r'users', UserViewSet)
+router.register(r'courses', CourseViewSet)
+router.register(r'lessons', LessonViewSet)
 
 urlpatterns = [
-    # Корневой URL
-    path('', api_root, name='api-root'),
-    
-    # Админка
     path('admin/', admin.site.urls),
-    
-    # API
-    path('api/', include('users.urls')),
-    path('api/', include('materials.urls')),
+    path('api/', include(router.urls)),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/profile/', UserProfileAPIView.as_view(), name='user_profile'),
 ]
-
-# Медиа файлы для разработки
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

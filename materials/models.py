@@ -1,102 +1,38 @@
 from django.db import models
-from django.utils.translation import gettext_lazy as _
-from django.conf import settings
+from users.models import User
+
 
 class Course(models.Model):
     """Модель курса"""
-    
-    title = models.CharField(
-        _('title'),
-        max_length=255
-    )
-    
-    preview = models.ImageField(
-        _('preview'),
-        upload_to='courses/previews/',
-        blank=True,
-        null=True
-    )
-    
-    description = models.TextField(
-        _('description')
-    )
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='courses',
-        verbose_name=_('owner')
-    )
-    
-    created_at = models.DateTimeField(
-        _('created at'),
-        auto_now_add=True
-    )
-    
-    updated_at = models.DateTimeField(
-        _('updated at'),
-        auto_now=True
-    )
-    
-    class Meta:
-        verbose_name = _('course')
-        verbose_name_plural = _('courses')
-    
+    title = models.CharField(max_length=255, verbose_name='Название')
+    description = models.TextField(verbose_name='Описание', blank=True, null=True)
+    preview = models.ImageField(upload_to='courses/previews/', verbose_name='Превью', blank=True, null=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Владелец', related_name='courses')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = 'Курс'
+        verbose_name_plural = 'Курсы'
+        ordering = ['-created_at']
 class Lesson(models.Model):
     """Модель урока"""
+    title = models.CharField(max_length=255, verbose_name='Название')
+    description = models.TextField(verbose_name='Описание', blank=True, null=True)
+    preview = models.ImageField(upload_to='lessons/previews/', verbose_name='Превью', blank=True, null=True)
+    video_link = models.URLField(verbose_name='Ссылка на видео', blank=True, null=True)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, verbose_name='Курс', related_name='lessons')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Владелец', related_name='lessons')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
 
-    title = models.CharField(
-        _('title'),
-        max_length=255
-    )
-    
-    description = models.TextField(
-        _('description')
-    )
-    
-    preview = models.ImageField(
-        _('preview'),
-        upload_to='lessons/previews/',
-        blank=True,
-        null=True
-    )
-    
-    video_link = models.URLField(
-        _('video link')
-    )
-    
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='lessons',
-        verbose_name=_('course')
-    )
-    
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='lessons',
-        verbose_name=_('owner')
-    )
-    created_at = models.DateTimeField(
-        _('created at'),
-        auto_now_add=True
-    )
-    
-    updated_at = models.DateTimeField(
-        _('updated at'),
-        auto_now=True
-    )
-    
-    class Meta:
-        verbose_name = _('lesson')
-        verbose_name_plural = _('lessons')
-    
     def __str__(self):
-        return f"{self.title} ({self.course.title})"
+        return self.title
+
+    class Meta:
+        verbose_name = 'Урок'
+        verbose_name_plural = 'Уроки'
+        ordering = ['-created_at']

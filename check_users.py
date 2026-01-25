@@ -6,6 +6,6 @@ django.setup()
 
 from users.models import User
 
-print("=== СУЩЕСТВУЮЩИЕ ПОЛЬЗОВАТЕЛИ ===")
+print("=== СУЩЕСТВУЮЩИЕ ПОЛЬЗОВАТЕЛЬ ===")
 for user in User.objects.all():
-    print(f"ID: {user.id}, Email: {user.email}, Username: {user.username}, Is Staff: {user.is_staff}, Is Superuser: {user.is_superuser}")
+    print(f"ID: {user.id}, Email: {user.email}")

@@ -51,3 +51,23 @@ class UserWithPaymentsSerializer(UserSerializer):
     
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ['payments']
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для обновления пользователя"""
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
+    
+    class Meta:
+        model = User
+        fields = ['email', 'first_name', 'last_name', 'phone', 'city', 'password']
+        read_only_fields = ['email']  # email нельзя менять
+    
+    def update(self, instance, validated_data):
+        """Обновление пользователя с обработкой пароля"""
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+        
+        if password:
+            user.set_password(password)
+            user.save()
+        
+        return user

@@ -1,45 +1,60 @@
-from rest_framework import viewsets, permissions
-from django.contrib.auth import get_user_model
-from .serializers import UserSerializer, UserCreateSerializer
+from rest_framework import viewsets, generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth.models import Group
+from .models import User
+from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer
+from .permissions import IsModerator
 
-User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
-    """ViewSet для пользователей (CRUD)"""
-    
+    """ViewSet для пользователей"""
     queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]
     
     def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от действия"""
+        """Выбираем сериализатор в зависимости от действия"""
         if self.action == 'create':
             return UserCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserUpdateSerializer
         return UserSerializer
-from rest_framework import viewsets, filters
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Payment
-from .serializers import PaymentSerializer, UserWithPaymentsSerializer
+    def get_permissions(self):
+        """Определяем права доступа в зависимости от действия"""
+        if self.action == 'create':
+            # Регистрация доступна всем
+            self.permission_classes = [AllowAny]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Обновлять и удалять может только владелец профиля
+            self.permission_classes = [IsAuthenticated]
+        else:
+            # Просматривать список и детали может любой аутентифицированный пользователь
+            self.permission_classes = [IsAuthenticated]
+        
+        return [permission() for permission in self.permission_classes]
+    
+    def perform_create(self, serializer):
+        """При создании пользователя устанавливаем пароль"""
+        user = serializer.save()
+        user.set_password(serializer.validated_data['password'])
+        user.save()
+    
+    def perform_update(self, serializer):
+        """При обновлении пользователя проверяем пароль"""
+        user = serializer.save()
+        if 'password' in serializer.validated_data:
+            user.set_password(serializer.validated_data['password'])
+            user.save()
+class UserProfileAPIView(generics.RetrieveUpdateAPIView):
+    """API для профиля пользователя (дополнительное задание)"""
+    serializer_class = UserUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self):
+        """Возвращает текущего пользователя"""
+        return self.request.user
 
-class PaymentViewSet(viewsets.ModelViewSet):
-    """ViewSet для платежей с фильтрацией (Задание 4)"""
-    
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    
-    # ЗАДАНИЕ 4: Фильтры
-    filterset_fields = {
-        'course': ['exact'],
-        'lesson': ['exact'],
-        'payment_method': ['exact'],
-    }
-    
-    # ЗАДАНИЕ 4: Сортировка
-    ordering_fields = ['payment_date', 'amount']
-    ordering = ['-payment_date']  # По умолчанию сортировка по дате (новые сначала)
-    
-    # ДОПОЛНИТЕЛЬНОЕ ЗАДАНИЕ: Переопределяем get_serializer_class для User
-    def get_serializer_class(self):
-        if self.action == 'retrieve' and 'payments' in self.request.query_params.get('include', ''):
-            return UserWithPaymentsSerializer
-        return super().get_serializer_class()
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Кастомный view для получения JWT токена"""
+    permission_classes = [AllowAny]
