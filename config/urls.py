@@ -1,22 +1,31 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-# Импорты views
+from materials.views import CourseViewSet
 from users.views import UserViewSet, UserProfileAPIView
-from materials.views import CourseViewSet, LessonViewSet
 
-# Настройка роутера
-router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
+# Создаем router для API
+router = DefaultRouter()
 router.register(r'courses', CourseViewSet)
-router.register(r'lessons', LessonViewSet)
+# Уроки теперь обрабатываются отдельными APIView, а не ViewSet
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # API URLs
     path('api/', include(router.urls)),
+    
+    # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # User profile
     path('api/profile/', UserProfileAPIView.as_view(), name='user_profile'),
+    
+    # Materials app URLs (lessons, subscriptions)
+    path('api/', include('materials.urls')),
+    
+    # Users app URLs
+    path('api/', include('users.urls')),
 ]
