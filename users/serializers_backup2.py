@@ -3,18 +3,6 @@ from django.contrib.auth.password_validation import validate_password
 from .models import User, Payment
 
 
-class PaymentHistorySerializer(serializers.ModelSerializer):
-    """Сериализатор для истории платежей в профиле пользователя"""
-    course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
-    lesson_title = serializers.CharField(source='lesson.title', read_only=True, allow_null=True)
-    
-    class Meta:
-        model = Payment
-        fields = ['id', 'payment_date', 'course', 'course_title', 'lesson', 'lesson_title', 
-                 'amount', 'payment_method']
-        read_only_fields = fields
-
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
@@ -38,6 +26,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -45,13 +35,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """Сериализатор профиля пользователя с историей платежей"""
-    payments = PaymentHistorySerializer(many=True, read_only=True, source='payments')
-    
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'phone', 'payments')
-        read_only_fields = fields
+        fields = ('id', 'email', 'first_name', 'last_name', 'phone')
 
 
 class PaymentSerializer(serializers.ModelSerializer):
