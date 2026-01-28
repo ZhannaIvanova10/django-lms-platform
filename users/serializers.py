@@ -1,60 +1,19 @@
 from rest_framework import serializers
-from django.contrib.auth.password_validation import validate_password
-from .models import User, Payment
+from django.contrib.auth import get_user_model
+from .models import Subscription
 
+User = get_user_model()
 
-class PaymentHistorySerializer(serializers.ModelSerializer):
-    """Сериализатор для истории платежей в профиле пользователя"""
-    course_title = serializers.CharField(source='course.title', read_only=True, allow_null=True)
-    lesson_title = serializers.CharField(source='lesson.title', read_only=True, allow_null=True)
-    
-    class Meta:
-        model = Payment
-        fields = ['id', 'payment_date', 'course', 'course_title', 'lesson', 'lesson_title', 
-                 'amount', 'payment_method']
-        read_only_fields = fields
-
-
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
-
-    class Meta:
-        model = User
-        fields = ('email', 'password', 'password2', 'first_name', 'last_name', 'phone')
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
-        return attrs
-
-    def create(self, validated_data):
-        user = User.objects.create(
-            email=validated_data['email'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
-            phone=validated_data.get('phone', '')
-        )
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'phone', 'is_active')
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    """Сериализатор профиля пользователя с историей платежей"""
-    payments = PaymentHistorySerializer(many=True, read_only=True, source='payments')
-    
-    class Meta:
-        model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'phone', 'payments')
+        fields = ['id', 'email', 'first_name', 'last_name', 'phone']
         read_only_fields = fields
 
-
-class PaymentSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer):
+    course_id = serializers.IntegerField(write_only=True, required=True)
+    
     class Meta:
-        model = Payment
-        fields = '__all__'
+        model = Subscription
+        fields = ['id', 'user', 'course', 'course_id', 'created_at']
+        read_only_fields = ['user', 'course', 'created_at']
