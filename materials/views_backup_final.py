@@ -13,7 +13,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
     pagination_class = MaterialsPagination
-
+    
     def get_permissions(self):
         if self.action == 'create':
             self.permission_classes = [IsAuthenticated, ~IsModerator]
@@ -24,20 +24,20 @@ class CourseViewSet(viewsets.ModelViewSet):
         else:
             self.permission_classes = [IsAuthenticated]
         return [permission() for permission in self.permission_classes]
-    
     def get_queryset(self):
         user = self.request.user
         if user.is_staff or IsModerator().has_permission(self.request, self):
             return Course.objects.all()
         return Course.objects.filter(owner=user)
-
+    
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
 
 class LessonCreateAPIView(generics.CreateAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, ~IsModerator]
-
+    
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
@@ -46,19 +46,18 @@ class LessonListAPIView(generics.ListAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = MaterialsPagination
-
+    
     def get_queryset(self):
         user = self.request.user
         if user.is_staff or IsModerator().has_permission(self.request, self):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
 
-
 class LessonRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
     queryset = Lesson.objects.all()
-
+    
     def get_queryset(self):
         user = self.request.user
         if user.is_staff or IsModerator().has_permission(self.request, self):
@@ -70,12 +69,13 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsOwner | IsModerator]
     queryset = Lesson.objects.all()
-
+    
     def get_queryset(self):
         user = self.request.user
         if user.is_staff or IsModerator().has_permission(self.request, self):
             return Lesson.objects.all()
         return Lesson.objects.filter(owner=user)
+
 
 class LessonDestroyAPIView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwner, ~IsModerator]
@@ -84,32 +84,6 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     def get_queryset(self):
         return Lesson.objects.filter(owner=self.request.user)
 
-
-# Для совместимости с router создаем LessonViewSet
-class LessonViewSet(viewsets.ModelViewSet):
-    serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
-    pagination_class = MaterialsPagination
-    
-    def get_permissions(self):
-        if self.action == 'create':
-            self.permission_classes = [IsAuthenticated, ~IsModerator]
-        elif self.action in ['update', 'partial_update']:
-            self.permission_classes = [IsAuthenticated, IsOwner | IsModerator]
-        elif self.action == 'destroy':
-            self.permission_classes = [IsAuthenticated, IsOwner, ~IsModerator]
-        else:
-            self.permission_classes = [IsAuthenticated]
-        return [permission() for permission in self.permission_classes]
-    
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff or IsModerator().has_permission(self.request, self):
-            return Lesson.objects.all()
-        return Lesson.objects.filter(owner=user)
-    
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
 
 class SubscriptionAPIView(APIView):
     """
@@ -159,15 +133,3 @@ class SubscriptionAPIView(APIView):
             "is_subscribed": is_subscribed,
             "course_id": course_id
         })
-
-
-# Для совместимости с router создаем SubscriptionViewSet
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    serializer_class = SubscriptionSerializer
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return Subscription.objects.filter(user=self.request.user)
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)

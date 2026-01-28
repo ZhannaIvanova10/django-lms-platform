@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Course, Lesson, Subscription
-from .validators import validate_video_url, validate_description
+from materials.models import Lesson, Course, Subscription
+from materials.validators import validate_video_url, validate_description
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -11,7 +11,7 @@ class LessonSerializer(serializers.ModelSerializer):
             validate_video_url,
             validate_description,
         ]
-    
+
     def validate(self, data):
         """
         Дополнительная валидация данных урока
@@ -24,75 +24,33 @@ class LessonSerializer(serializers.ModelSerializer):
         description = data.get('description')
         if description:
             validate_description(description)
-        
         return data
+
+
+class LessonShortSerializer(serializers.ModelSerializer):
+    """Краткий сериализатор для отображения уроков в курсе"""
+
+    class Meta:
+        model = Lesson
+        fields = ['id', 'title', 'description', 'video_url', 'order']
+        read_only_fields = ['id']
 
 
 class CourseSerializer(serializers.ModelSerializer):
     lessons_count = serializers.SerializerMethodField()
-    lessons = LessonSerializer(many=True, read_only=True)
-    is_subscribed = serializers.SerializerMethodField()
-    
+    lessons = LessonShortSerializer(many=True, read_only=True, source='lessons')
+
     class Meta:
         model = Course
-        fields = [
-            'id', 'title', 'description', 'preview', 'owner',
-            'created_at', 'updated_at', 'lessons_count',
-            'lessons', 'is_subscribed'
-        ]
-        validators = [
-            validate_description,
-        ]
+        fields = ['id', 'title', 'description', 'preview', 'owner',
+                 'created_at', 'updated_at', 'lessons_count', 'lessons']
+        read_only_fields = ['id', 'owner']
 
     def get_lessons_count(self, obj):
         return obj.lessons.count()
-    
-    def get_is_subscribed(self, obj):
-        """
-        Проверяем, подписан ли текущий пользователь на курс
-        """
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return Subscription.objects.filter(
-                user=request.user,
-                course=obj,
-                is_active=True
-            ).exists()
-        return False
-    
-    def validate(self, data):
-        """
-        Дополнительная валидация данных курса
-        """
-        # Проверяем описание
-        description = data.get('description')
-        if description:
-            validate_description(description)
-        
-        return data
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для подписок"""
     class Meta:
         model = Subscription
-        fields = ['id', 'user', 'course', 'is_active']
-        read_only_fields = ['user']
-    
-    def create(self, validated_data):
-        """Автоматически устанавливаем текущего пользователя"""
-        user = self.context['request'].user
-        course = validated_data.get('course')
-        
-        # Проверяем, существует ли уже подписка
-        subscription, created = Subscription.objects.get_or_create(
-            user=user,
-            course=course,
-            defaults={'is_active': True}
-        )
-        
-        if not created:
-            # Если подписка уже существует, переключаем её активность
-            subscription.is_active = not subscription.is_active
-            subscription.save()
-        
-        return subscription
+        fields = '__all__'

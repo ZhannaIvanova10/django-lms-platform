@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django_filters',
+        'django_filters',
     'rest_framework_simplejwt',
 
     'users',
@@ -65,12 +65,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 
 # Password validation
@@ -148,3 +142,44 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+# Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lms_platform',
+        'USER': 'lms_user',
+        'PASSWORD': 'lms_password',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+
+# Read environment variables
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Update database settings from .env if available
+if os.getenv('DB_NAME'):
+    DATABASES['default']['NAME'] = os.getenv('DB_NAME')
+if os.getenv('DB_USER'):
+    DATABASES['default']['USER'] = os.getenv('DB_USER')
+if os.getenv('DB_PASSWORD'):
+    DATABASES['default']['PASSWORD'] = os.getenv('DB_PASSWORD')
+if os.getenv('DB_HOST'):
+    DATABASES['default']['HOST'] = os.getenv('DB_HOST')
+if os.getenv('DB_PORT'):
+    DATABASES['default']['PORT'] = os.getenv('DB_PORT')
+
+# Update secret key from .env
+SECRET_KEY = os.getenv('SECRET_KEY', SECRET_KEY)
+
+# Update debug from .env
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
+
+# Update allowed hosts
+if os.getenv('ALLOWED_HOSTS'):
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
